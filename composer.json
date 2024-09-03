@@ -1,0 +1,16 @@
+{
+    "name": "sarduk/merge_templates",
+    "description": "A PHP CLI script for merging and copying files between directories while preserving structure and managing content integration.",
+    "type": "script",
+    "license": "GPL-3.0 license",
+    "authors": [
+        {
+            "name": "rea biagio",
+            "email": "reabiagio@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require-dev": {
+        "phpunit/phpunit": "^11.4@dev"
+    }
+}
