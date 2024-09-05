@@ -1,57 +1,121 @@
 # merge_templates
-A PHP CLI script for merging and copying files between directories while preserving structure and managing content integration.
-newline prova
 
-### Usage:
+## Overview
+
+`merge_templates.php` is a PHP CLI script designed to facilitate the merging and copying of files between two directories, while preserving the directory structure. The script supports advanced file merging features, allowing content to be inserted into specific locations within existing files, based on placeholders. It also provides flexibility in controlling how files are copied and merged through various command-line options.
+
+## Features
+
+- **Recursive Directory Copying:** Copies files and directories from the source to the target, maintaining the original structure.
+- **Conditional File Overwriting:** Allows control over whether existing files in the target directory are overwritten.
+- **Content Merging:** Inserts content into specific placeholders within target files, based on source files with a predefined format.
+- **Duplicate Control:** Optionally prevents duplicate content from being inserted during the merge process.
+- **Highly Configurable:** Offers multiple command-line options to customize behavior.
+
+## Usage
+
+### Basic Command
+
+```bash
 php merge_templates.php [OPTIONS] path_source_dir/ path_target_dir/
+```
 
-[OPTIONS]
+### Options
 
-      --force               Overwrite files in path_target_dir/ without prompting
+- `--paste-files=true|false` (default: `true`): 
+  - `true`: Copies files from `path_source_dir/` to `path_target_dir/`.
+  - `false`: Skips file copying and directory creation.
 
-      --help, -h            Display this help message
+- `--paste-files-replace=true|false` (default: `true`): 
+  - `true`: Overwrites existing files in `path_target_dir/` during the copy process.
+  - `false`: Skips copying if a file with the same name already exists in the target directory.
 
-      --version, -v         Display the version of the script
+- `--merge-contents=true|false` (default: `true`): 
+  - `true`: Processes files of type `merge_add_content` to insert content into placeholders within target files.
+  - `false`: Skips processing these files.
 
+- `--allow-merge-contents-dups=true|false` (default: `false`): 
+  - `true`: Allows the insertion of duplicate content within placeholders during the merge process.
+  - `false`: Checks existing placeholder content in the target file, and skips inserting duplicates.
 
-### Come funziona lo script:
+- `--help`, `-h`: Displays help information about the script.
+- `--version`, `-v`: Displays the script version.
 
+## Example Scenarios
 
-1. **Parsing delle opzioni:**
-   - `--force`: Se presente, sovrascrive i file in `path_target_dir/` senza chiedere conferma.
-   - `--help` o `-h`: Mostra un messaggio di aiuto e termina lo script.
-   - `--version` o `-v`: Mostra la versione dello script e termina.
+### Scenario 1: Basic Copy and Merge
 
-2. **Processo di merge:**
-   - Lo script esamina i file in `path_source_dir/` e li copia in `path_target_dir/`, mantenendo la stessa struttura di directory.
-   - Se un file in `path_source_dir/` corrisponde al formato `+numero_nomefile`, il contenuto di quel file viene aggiunto in un punto specifico del file target, corrispondente al placeholder presente nella prima riga del file di tipo `merge_add_content`.
-   - Se il file target non esiste, viene lanciata un'eccezione.
+Copy files from `source/` to `target/`, replacing existing files and merging content where applicable:
 
-3. **Gestione degli errori:**
-   - Lo script lancia eccezioni se si verificano problemi come file già esistenti (senza `--force`) o file target mancanti per le operazioni di merge.
+```bash
+php merge_templates.php path_source_dir/ path_target_dir/
+```
 
-### Come utilizzare lo script:
+### Scenario 2: Prevent File Overwriting
 
-- Per unire directory senza sovrascrivere file:
-  ```bash
-  php merge_templates.php path_source_dir/ path_target_dir/
-  ```
+Copy files without replacing existing files in the target directory:
 
-- Per unire directory e sovrascrivere file esistenti:
-  ```bash
-  php merge_templates.php --force path_source_dir/ path_target_dir/
-  ```
+```bash
+php merge_templates.php --paste-files-replace=false path_source_dir/ path_target_dir/
+```
 
-- Per mostrare la guida:
-  ```bash
-  php merge_templates.php --help
-  ```
+### Scenario 3: Content Merging Only
 
-- Per mostrare la versione:
-  ```bash
-  php merge_templates.php --version
-  ```
+Merge content from `merge_add_content` files without copying any other files:
 
-Questo script offre un approccio completo per gestire la fusione e copia di file tra directory, con attenzione particolare ai casi di aggiunta di contenuti specifici.
+```bash
+php merge_templates.php --paste-files=false --merge-contents=true path_source_dir/ path_target_dir/
+```
+
+### Scenario 4: No Duplicate Content in Placeholders
+
+Merge content but prevent the insertion of duplicate content within placeholders:
+
+```bash
+php merge_templates.php --allow-merge-contents-dups=false path_source_dir/ path_target_dir/
+```
+
+## File Format for Content Merging
+
+To merge content into an existing file in the target directory, create a file in the source directory with the following format:
+
+**File Name Format:**  
+`+<number>_<target-filename>`
+
+**Example File Content (`+1_example.txt`):**
+```
+###placeholder_start
+Content line 1 to insert
+Content line 2 to insert
+###placeholder_end
+```
+
+In the target file (`example.txt`), the script will search for `###placeholder_start` and `###placeholder_end`, and insert the new content between these markers.
+
+**Example Target File (`example.txt`) Before Merge:**
+```
+###placeholder_start
+Existing content...
+###placeholder_end
+```
+
+**Example Target File (`example.txt`) After Merge:**
+```
+###placeholder_start
+Content line 1 to insert
+Content line 2 to insert
+Existing content...
+###placeholder_end
+```
+
+## Error Handling
+
+- If a target file for merging does not exist, the script will throw an exception.
+- The script ensures that if duplicate content is not allowed, it will skip inserting content that already exists within the placeholder.
+
+## License
+
+This script is released under the MIT License.
+
 
 

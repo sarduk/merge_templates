@@ -1,0 +1,48 @@
+bash
+path_prj='/PATH/TO/merge_templates'
+
+/////
+/////
+/////
+
+###example1
+
+path_example="${path_prj}/examples/example1"
+path_source_dir="${path_example}/source_dir"
+path_target_dir="${path_example}/target_dir"
+
+rm -r $path_target_dir
+cp -r "${path_example}/target_dir_MASTER_READONLY" $path_target_dir
+
+php ${path_prj}/src/merge_templates.php $path_source_dir $path_target_dir
+
+###CHECK path_target_dir
+
+treebr $path_target_dir
+
+/////
+/////
+/////
+
+###example2
+
+path_example="${path_prj}/examples/example2"
+path_source_dir="${path_example}/source_dir"
+path_target_dir="${path_example}/target_dir"
+
+rm -r $path_target_dir
+cp -r "${path_example}/target_dir_MASTER_READONLY" $path_target_dir
+
+cat "$path_source_dir/+1file5.txt"
+echo -e "\n\n"
+cat "$path_target_dir/file5.txt"
+
+echo -e "\n\n"
+echo "run scritp"
+php ${path_prj}/src/merge_templates.php $path_source_dir $path_target_dir
+echo -e "\n\n"
+
+###CHECK path_target_dir
+
+treebr $path_target_dir
+cat "$path_target_dir/file5.txt"
