@@ -33,7 +33,7 @@ path_target_dir="${path_example}/target_dir"
 rm -r $path_target_dir
 cp -r "${path_example}/target_dir_MASTER_READONLY" $path_target_dir
 
-cat "$path_source_dir/+1file5.txt"
+cat "$path_source_dir/+1_file5.txt"
 echo -e "\n\n"
 cat "$path_target_dir/file5.txt"
 

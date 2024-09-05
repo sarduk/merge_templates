@@ -41,41 +41,106 @@ function mergeAddContent($sourceFilePath, $targetFilePath, $allowDups)
     $placeholderEnd = trim(end($sourceLines)); // Last line is the closing placeholder
     $sourceContent = array_slice($sourceLines, 1, -1); // Content between the placeholders
 
-    // Read the target file
-    $targetLines = file($targetFilePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    // Parse the target file into an array of blocks
+    $targetContent = file($targetFilePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+    $parsedBlocks = parseTargetFileIntoBlocks($targetContent, $placeholderStart, $placeholderEnd);
 
-    // Create a buffer to store the new content of the target file
-    $newTargetContent = [];
+    parsedBlocksMergeContent($parsedBlocks, $placeholderStart, $sourceContent);
+
+    // Write the updated content back to the target file
+    $newTargetContent = convertBlocksToString($parsedBlocks, $placeholderStart, $placeholderEnd);
+    file_put_contents($targetFilePath, $newTargetContent);
+}
+
+function parsedBlocksMergeContent( & $parsedBlocks, $placeholderStart, $sourceContent)
+{
+    // Iterate through the parsed blocks and merge content
+    foreach ($parsedBlocks as $blockIndex => $block) {
+        // Check if the block is inside a placeholder
+        foreach ($block as $placeholder => $content) {
+            if ($placeholder === $placeholderStart) {
+                // Accumulate the source content inside the placeholder block
+                $parsedBlocks[$blockIndex][$placeholder] = implode("\n", $sourceContent) . "\n" . $content;
+            }
+        }
+    }
+}
+
+/**
+ * Parses the target file into blocks and separates them by placeholders.
+ *
+ * @param array $targetContent The content of the target file.
+ * @param string $placeholderStart The placeholder that marks the start of a placeholder block.
+ * @param string $placeholderEnd The placeholder that marks the end of a placeholder block.
+ * @return array Parsed blocks of content.
+ */
+function parseTargetFileIntoBlocks($targetContent, $placeholderStart, $placeholderEnd)
+{
+    $blocks = [];
+    $currentBlock = '';
     $insidePlaceholder = false;
+    $currentPlaceholder = '';
 
-    foreach ($targetLines as $line) {
+    foreach ($targetContent as $line) {
         $trimmedLine = trim($line);
 
         if ($trimmedLine === $placeholderStart) {
-            $insidePlaceholder = true;
-            $newTargetContent[] = $line; // Add the opening placeholder
-            foreach ($sourceContent as $contentLine) {
-                $newTargetContent[] = $contentLine;
+            // Save the current block if it's not inside a placeholder
+            if ($currentBlock !== '') {
+                $blocks[] = ['' => $currentBlock];
             }
+
+            // Start a new block inside the placeholder
+            $currentPlaceholder = $placeholderStart;
+            $insidePlaceholder = true;
+            $currentBlock = '';
         } elseif ($trimmedLine === $placeholderEnd && $insidePlaceholder) {
-            // Add the content from the source file before closing the placeholder block
-            $newTargetContent[] = $line; // Add the closing placeholder
+            // End the placeholder block and save it
+            $blocks[] = [$currentPlaceholder => $currentBlock];
             $insidePlaceholder = false;
+            $currentBlock = '';
         } else {
-            if ($insidePlaceholder) {
-                // If inside a placeholder block, keep the original content
-                $newTargetContent[] = $line;
-            } else {
-                // Add lines outside placeholders as is
-                $newTargetContent[] = $line;
+            // Add the line to the current block
+            $currentBlock .= $line . "\n";
+        }
+    }
+
+    // Add the last block if necessary
+    if ($currentBlock !== '') {
+        $blocks[] = ['' => $currentBlock];
+    }
+
+    return $blocks;
+}
+
+/**
+ * Converts the array of blocks back into a string to be written to the target file.
+ *
+ * @param array $blocks The parsed blocks of content.
+ * @return string The content to be written to the target file.
+ */
+function convertBlocksToString($blocks, $placeholderStart, $placeholderEnd)
+{
+    $output = '';
+
+    foreach ($blocks as $block) {
+        foreach ($block as $placeholder => $content) {
+            if ($placeholder === $placeholderStart) {
+                $output .= $placeholderStart . "\n";
+            }
+            $output .= $content;
+            if ($placeholder === $placeholderStart) {
+                $output .= $placeholderEnd ."\n";
             }
         }
     }
 
-    // Write the updated content back to the target file
-    file_put_contents($targetFilePath, implode(PHP_EOL, $newTargetContent) . PHP_EOL);
+    return $output;
 }
 
+///////
+///////
+///////
 
 function processDirectory($sourceDir, $targetDir, $pasteFiles, $pasteFilesReplace, $mergeContents, $allowMergeDups) {
     $iterator = new RecursiveIteratorIterator(
@@ -109,6 +174,7 @@ function processDirectory($sourceDir, $targetDir, $pasteFiles, $pasteFilesReplac
         }
     }
 }
+
 
 $options = getopt("hv", ["help", "version", "paste-files::", "paste-files-replace::", "merge-contents::", "allow-merge-contents-dups::"]);
 
