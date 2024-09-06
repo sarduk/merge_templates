@@ -1,3 +1,4 @@
+#!/usr/bin/php
 <?php
 
 //echo __FILE__."\n";

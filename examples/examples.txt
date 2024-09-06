@@ -20,6 +20,7 @@ echo -e "\n\n"
 echo "run script"
 ###php ${path_prj}/src/merge_templates.php $path_source_dir $path_target_dir
 php ${path_prj}/src/merge_templates.php --paste-files=true $path_source_dir $path_target_dir
+###merge_templates.php --paste-files=true $path_source_dir $path_target_dir
 
 
 ###CHECK path_target_dir
