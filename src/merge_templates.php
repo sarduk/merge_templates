@@ -1,5 +1,7 @@
 <?php
 
+//echo __FILE__."\n";
+
 function printHelp() {
     echo "Usage: php merge_templates.php [OPTIONS] path_source_dir/ path_target_dir/\n\n";
     echo "[OPTIONS]\n";
@@ -45,22 +47,28 @@ function mergeAddContent($sourceFilePath, $targetFilePath, $allowDups)
     $targetContent = file($targetFilePath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
     $parsedBlocks = parseTargetFileIntoBlocks($targetContent, $placeholderStart, $placeholderEnd);
 
-    parsedBlocksMergeContent($parsedBlocks, $placeholderStart, $sourceContent);
+    parsedBlocksMergeContent($parsedBlocks, $placeholderStart, $sourceContent, $allowDups);
 
     // Write the updated content back to the target file
     $newTargetContent = convertBlocksToString($parsedBlocks, $placeholderStart, $placeholderEnd);
     file_put_contents($targetFilePath, $newTargetContent);
 }
 
-function parsedBlocksMergeContent( & $parsedBlocks, $placeholderStart, $sourceContent)
+function parsedBlocksMergeContent( & $parsedBlocks, $placeholderStart, $sourceContent, $allowDups)
 {
     // Iterate through the parsed blocks and merge content
     foreach ($parsedBlocks as $blockIndex => $block) {
         // Check if the block is inside a placeholder
         foreach ($block as $placeholder => $content) {
             if ($placeholder === $placeholderStart) {
+                $str_sourceContent = implode("\n", $sourceContent);
+                if (!$allowDups) {
+                    if (strpos($content, $str_sourceContent) !== false) {
+                        continue;
+                    }
+                }
                 // Accumulate the source content inside the placeholder block
-                $parsedBlocks[$blockIndex][$placeholder] = implode("\n", $sourceContent) . "\n" . $content;
+                $parsedBlocks[$blockIndex][$placeholder] = $str_sourceContent . "\n" . $content;
             }
         }
     }

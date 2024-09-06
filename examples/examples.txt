@@ -1,5 +1,7 @@
 bash
 path_prj='/PATH/TO/merge_templates'
+path_prj='/media/ubiagio/Sviluppo/www/reabiagio_scripts/prj_merge_templates/merge_templates'
+
 
 /////
 /////
@@ -14,7 +16,11 @@ path_target_dir="${path_example}/target_dir"
 rm -r $path_target_dir
 cp -r "${path_example}/target_dir_MASTER_READONLY" $path_target_dir
 
-php ${path_prj}/src/merge_templates.php $path_source_dir $path_target_dir
+echo -e "\n\n"
+echo "run script"
+###php ${path_prj}/src/merge_templates.php $path_source_dir $path_target_dir
+php ${path_prj}/src/merge_templates.php --paste-files=true $path_source_dir $path_target_dir
+
 
 ###CHECK path_target_dir
 
@@ -38,7 +44,7 @@ echo -e "\n\n"
 cat "$path_target_dir/file5.txt"
 
 echo -e "\n\n"
-echo "run scritp"
+echo "run script"
 php ${path_prj}/src/merge_templates.php $path_source_dir $path_target_dir
 echo -e "\n\n"
 

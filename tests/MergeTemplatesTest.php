@@ -7,8 +7,16 @@ class MergeTemplatesTest extends TestCase
     protected $sourceDir;
     protected $targetDir;
 
+    public function printmsg($msg){
+        //echo $msg . "\n";
+        //fwrite(STDERR, $msg . "\n");
+        echo  json_encode($msg) . "\n";
+        
+    }
+
     protected function setUp(): void
     {
+        //$this->printmsg('function ' . __FUNCTION__);
         // Define paths for source and target directories
         $this->sourceDir = __DIR__ . '/test_source_dir';
         $this->targetDir = __DIR__ . '/test_target_dir';
@@ -21,6 +29,8 @@ class MergeTemplatesTest extends TestCase
     protected function tearDown(): void
     {
         // Clean up by removing source and target directories
+        //$this->printmsg('function ' . __FUNCTION__);
+
         $this->removeDirectory($this->sourceDir);
         $this->removeDirectory($this->targetDir);
     }
@@ -40,9 +50,11 @@ class MergeTemplatesTest extends TestCase
     }
 
 
-    protected function runScript($options)
+    protected function runScript($options='')
     {
-        $command = "php " . __DIR__ . "/../merge_templates.php $options " . $this->sourceDir . " " . $this->targetDir;
+        //$this->printmsg('function ' . __FUNCTION__);
+        $command = "php " . __DIR__ . "/../src/merge_templates.php $options " . $this->sourceDir . " " . $this->targetDir;
+        //$this->printmsg('command = '.$command);
         exec($command);
     }
 
@@ -50,6 +62,8 @@ class MergeTemplatesTest extends TestCase
 
     public function testPasteFilesTrue(): void
     {
+
+        //$this->printmsg('function ' . __FUNCTION__);
         // Prepare files in source directory
         file_put_contents($this->sourceDir . '/file1.txt', 'Content of file1');
 
@@ -83,59 +97,79 @@ class MergeTemplatesTest extends TestCase
     public function testPasteFilesReplaceFalse(): void
     {
         // Prepare files in source and target directories
-        file_put_contents($this->sourceDir . '/file3.txt', 'Content from source');
-        file_put_contents($this->targetDir . '/file3.txt', 'Content from target');
+        $filename = 'file3.txt';
+        $filesource_original_content = 'Content from source';
+        $filetarget_original_content = 'Content from target';
+        file_put_contents($this->sourceDir . '/'.$filename, $filesource_original_content);
+        file_put_contents($this->targetDir . '/'.$filename, $filetarget_original_content);
 
         // Run the script with paste-files-replace=false
         $this->runScript('--paste-files-replace=false');
 
-        // Check that the target file was not overwritten
-        $this->assertEquals('Content from target', file_get_contents($this->targetDir . '/file3.txt'));
+        $expectedContent = $filetarget_original_content;
+        $actualContent = file_get_contents($this->targetDir . '/'.$filename);
+        $actualContent = trim($actualContent);
+
+        $this->assertEquals($expectedContent, $actualContent);
     }
 
     public function testPasteFilesReplaceTrue(): void
     {
         // Prepare files in source and target directories
-        file_put_contents($this->sourceDir . '/file4.txt', 'Content from source');
-        file_put_contents($this->targetDir . '/file4.txt', 'Content from target');
+        $filename = 'file4.txt';
+        $filesource_original_content = 'Content from source';
+        file_put_contents($this->sourceDir . '/'.$filename, $filesource_original_content);
+        file_put_contents($this->targetDir . '/'.$filename, 'Content from target');
 
         // Run the script with paste-files-replace=true (default behavior)
         $this->runScript('--paste-files-replace=true');
 
-        // Check that the target file was overwritten
-        $this->assertEquals('Content from source', file_get_contents($this->targetDir . '/file4.txt'));
+        $expectedContent = $filesource_original_content;
+        $actualContent = file_get_contents($this->targetDir . '/'.$filename);
+        $actualContent = trim($actualContent);
+
+        $this->assertEquals($expectedContent, $actualContent);
     }
 
 
-    ### 5. Test for Merging Content
+    // ### 5. Test for Merging Content
 
 
     public function testMergeContentsTrue(): void
     {
         // Prepare files in source and target directories
-        file_put_contents($this->sourceDir . '/+1_file5.txt', "###placeholder_start\nContent to merge\n###placeholder_end");
-        file_put_contents($this->targetDir . '/file5.txt', "###placeholder_start\nOriginal content\n###placeholder_end");
+        $filename = 'file5.txt';
+        file_put_contents($this->sourceDir . '/+1_'.$filename, "###placeholder_start\nContent to merge\n###placeholder_end");
+        file_put_contents($this->targetDir . '/'.$filename, "###placeholder_start\nOriginal content\n###placeholder_end");
 
         // Run the script with merge-contents=true (default behavior)
         $this->runScript('--merge-contents=true');
 
         // Check that the content was merged correctly
         $expectedContent = "###placeholder_start\nContent to merge\nOriginal content\n###placeholder_end";
-        $this->assertEquals($expectedContent, file_get_contents($this->targetDir . '/file5.txt'));
+        $actualContent = file_get_contents($this->targetDir . '/'.$filename);
+        $actualContent = trim($actualContent);
+
+        $this->assertEquals($expectedContent, $actualContent);
     }
 
     public function testMergeContentsFalse(): void
     {
         // Prepare files in source and target directories
-        file_put_contents($this->sourceDir . '/+1_file6.txt', "###placeholder_start\nContent to merge\n###placeholder_end");
-        file_put_contents($this->targetDir . '/file6.txt', "###placeholder_start\nOriginal content\n###placeholder_end");
+        $filename = 'file7.txt';
+        file_put_contents($this->sourceDir . '/+1_'.$filename, "###placeholder_start\nContent to merge\n###placeholder_end");
+        $filetarget_original_content =  "###placeholder_start\nOriginal content\n###placeholder_end";
+        file_put_contents($this->targetDir . '/'.$filename, $filetarget_original_content);
 
         // Run the script with merge-contents=false
         $this->runScript('--merge-contents=false');
 
         // Check that the content was not merged
-        $expectedContent = "###placeholder_start\nOriginal content\n###placeholder_end";
-        $this->assertEquals($expectedContent, file_get_contents($this->targetDir . '/file6.txt'));
+        $expectedContent = $filetarget_original_content;
+        $actualContent = file_get_contents($this->targetDir . '/'.$filename);
+        $actualContent = trim($actualContent);
+
+        $this->assertEquals($expectedContent, $actualContent);
     }
 
 
@@ -145,46 +179,70 @@ class MergeTemplatesTest extends TestCase
     public function testAllowMergeContentsDupsFalse(): void
     {
         // Prepare files in source and target directories
-        file_put_contents($this->sourceDir . '/+1_file7.txt', "###placeholder_start\nDuplicate content\n###placeholder_end");
-        file_put_contents($this->targetDir . '/file7.txt', "###placeholder_start\nDuplicate content\nOriginal content\n###placeholder_end");
+        $filename = 'file7.txt';
+        file_put_contents($this->sourceDir . '/+1_'.$filename, "###placeholder_start\nDuplicate content\n###placeholder_end");
+        $filetarget_original_content =  "###placeholder_start\nDuplicate content\nOriginal content\n###placeholder_end";
+        file_put_contents($this->targetDir . '/'.$filename, $filetarget_original_content);
 
         // Run the script with allow-merge-contents-dups=false
         $this->runScript('--allow-merge-contents-dups=false');
 
         // Check that the duplicate content was not inserted
-        $expectedContent = "###placeholder_start\nDuplicate content\nOriginal content\n###placeholder_end";
-        $this->assertEquals($expectedContent, file_get_contents($this->targetDir . '/file7.txt'));
+        $expectedContent = $filetarget_original_content;
+        $actualContent = file_get_contents($this->targetDir . '/'.$filename);
+        $actualContent = trim($actualContent);
+        //$this->printmsg("function_".__FUNCTION__." expectedContent : '$expectedContent'");
+        //$this->printmsg("function_".__FUNCTION__." actualContent : '$actualContent'");
+
+        $this->assertEquals($expectedContent, $actualContent);
     }
 
     public function testAllowMergeContentsDupsTrue(): void
     {
         // Prepare files in source and target directories
-        file_put_contents($this->sourceDir . '/+1_file8.txt', "###placeholder_start\nDuplicate content\n###placeholder_end");
-        file_put_contents($this->targetDir . '/file8.txt', "###placeholder_start\nOriginal content\n###placeholder_end");
+        $filename = 'file8.txt';
+        file_put_contents($this->sourceDir . '/+1_'.$filename, "###placeholder_start\nDuplicate content\n###placeholder_end");
+        $filetarget_original_content =  "###placeholder_start\nOriginal content\nDuplicate content\n###placeholder_end";
+        file_put_contents($this->targetDir . '/'.$filename, $filetarget_original_content);
 
         // Run the script with allow-merge-contents-dups=true
         $this->runScript('--allow-merge-contents-dups=true');
 
         // Check that the duplicate content was inserted
         $expectedContent = "###placeholder_start\nDuplicate content\nOriginal content\nDuplicate content\n###placeholder_end";
-        $this->assertEquals($expectedContent, file_get_contents($this->targetDir . '/file8.txt'));
+        $actualContent = file_get_contents($this->targetDir . '/'.$filename);
+        $actualContent = trim($actualContent);
+        //$this->printmsg("function_".__FUNCTION__." expectedContent : '$expectedContent'");
+        //$this->printmsg("function_".__FUNCTION__." actualContent : '$actualContent'");
+
+        $this->assertEquals($expectedContent, $actualContent);
     }
 
 
     ### 7. Test for Handling Non-Existent Placeholders
 
-
     public function testMergeWithNonExistentPlaceholder(): void
     {
         // Prepare files in source and target directories
-        file_put_contents($this->sourceDir . '/+1_file9.txt', "###placeholder_start\nContent to merge\n###placeholder_end");
-        file_put_contents($this->targetDir . '/file9.txt', "No placeholders here");
+        $filename = 'file9.txt';
+        file_put_contents($this->sourceDir . '/+1_'.$filename, "###placeholder_start\nContent to merge\n###placeholder_end");
+        $filetarget_original_content =  "No placeholders here";
+        file_put_contents($this->targetDir . '/'.$filename, $filetarget_original_content);
+        //$this->printmsg('function_testMergeWithNonExistentPlaceholder() file9.txt : '.file_get_contents($this->targetDir . '/file9.txt'));
 
         // Run the script with merge-contents=true (default behavior)
         $this->runScript('--merge-contents=true');
 
-        // Check that the target file was not modified
-        $this->assertEquals('No placeholders here', file_get_contents($this->targetDir . '/file9.txt'));
+        $expectedContent = $filetarget_original_content;
+        $actualContent = file_get_contents($this->targetDir . '/'.$filename);
+        $actualContent = trim($actualContent);
+        //$this->printmsg("function_testMergeWithNonExistentPlaceholder() expectedContent : '$expectedContent'");
+        //$this->printmsg("function_testMergeWithNonExistentPlaceholder() actualContent : '$actualContent'");
+
+        // Check that the target file has same content
+        //assertStringEqualsStringIgnoringLineEndings doesn't work as expected
+        //$this->assertStringEqualsStringIgnoringLineEndings($expectedContent, $actualContent);
+        $this->assertEquals($expectedContent, $actualContent);
     }
 
 }
